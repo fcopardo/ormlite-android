@@ -44,17 +44,19 @@ public class AndroidConnectionSource extends BaseConnectionSource implements Con
 		this.sqliteDatabase = sqliteDatabase;
 	}
 
-	public DatabaseConnection getReadOnlyConnection() throws SQLException {
+	@Override
+	public DatabaseConnection getReadOnlyConnection(String tableName) throws SQLException {
 		/*
 		 * We have to use the read-write connection because getWritableDatabase() can call close on
 		 * getReadableDatabase() in the future. This has something to do with Android's SQLite connection management.
 		 * 
 		 * See android docs: http://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper.html
 		 */
-		return getReadWriteConnection();
+		return getReadWriteConnection(tableName);
 	}
 
-	public DatabaseConnection getReadWriteConnection() throws SQLException {
+	@Override
+	public DatabaseConnection getReadWriteConnection(String tableName) throws SQLException {
 		DatabaseConnection conn = getSavedConnection();
 		if (conn != null) {
 			return conn;
@@ -81,33 +83,45 @@ public class AndroidConnectionSource extends BaseConnectionSource implements Con
 		return connection;
 	}
 
+	@Override
 	public void releaseConnection(DatabaseConnection connection) {
 		// noop since connection management is handled by AndroidOS
 	}
 
+	@Override
 	public boolean saveSpecialConnection(DatabaseConnection connection) throws SQLException {
 		return saveSpecial(connection);
 	}
 
+	@Override
 	public void clearSpecialConnection(DatabaseConnection connection) {
 		clearSpecial(connection, logger);
 	}
 
+	@Override
 	public void close() {
 		// the helper is closed so it calls close here, so this CANNOT be a call back to helper.close()
 		isOpen = false;
 	}
 
+	@Override
 	public void closeQuietly() {
 		close();
 	}
 
+	@Override
 	public DatabaseType getDatabaseType() {
 		return databaseType;
 	}
 
-	public boolean isOpen() {
+	@Override
+	public boolean isOpen(String tableName) {
 		return isOpen;
+	}
+
+	@Override
+	public boolean isSingleConnection(String tableName) {
+		return true;
 	}
 
 	/**

@@ -9,26 +9,25 @@ import com.j256.ormlite.logger.LoggerFactory;
  * 
  * <p>
  * To see log messages you will do something like:
+ * </p>
  * 
  * <pre>
  * adb shell setprop log.tag.OrmLiteBaseActivity VERBOSE
  * </pre>
  * 
- * </p>
- * 
  * <p>
  * <b>NOTE:</b> Unfortunately, Android variables are limited in size so this class takes that last 23 (sic) characters
  * of the class name if it is larger than 23 characters. For example, if the class is AndroidDatabaseConnection you
  * would do:
+ * </p>
  * 
  * <pre>
  * adb shell setprop log.tag.droidDatabaseConnection VERBOSE
  * </pre>
  * 
- * </p>
- * 
  * <p>
  * To see all ORMLite log messages use:
+ * </p>
  * 
  * <pre>
  * adb shell setprop log.tag.ORMLite DEBUG
@@ -68,6 +67,7 @@ public class AndroidLog implements com.j256.ormlite.logger.Log {
 		refreshLevelCache();
 	}
 
+	@Override
 	public boolean isLevelEnabled(Level level) {
 		// we don't care if this is not synchronized, it will be updated sooner or later and multiple updates are fine.
 		if (++levelCacheC >= REFRESH_LEVEL_CACHE_EVERY) {
@@ -82,6 +82,7 @@ public class AndroidLog implements com.j256.ormlite.logger.Log {
 		}
 	}
 
+	@Override
 	public void log(Level level, String msg) {
 		switch (level) {
 			case TRACE :
@@ -108,6 +109,7 @@ public class AndroidLog implements com.j256.ormlite.logger.Log {
 		}
 	}
 
+	@Override
 	public void log(Level level, String msg, Throwable t) {
 		switch (level) {
 			case TRACE :
