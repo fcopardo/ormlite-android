@@ -9,9 +9,9 @@ import java.io.InputStreamReader;
 import java.sql.SQLException;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatabase.CursorFactory;
-import android.database.sqlite.SQLiteOpenHelper;
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabase.CursorFactory;
+import net.sqlcipher.database.SQLiteOpenHelper;
 
 import com.j256.ormlite.android.AndroidConnectionSource;
 import com.j256.ormlite.android.AndroidDatabaseConnection;
@@ -34,10 +34,12 @@ import com.j256.ormlite.table.DatabaseTableConfigLoader;
 public abstract class OrmLiteSqliteOpenHelper extends SQLiteOpenHelper {
 
 	protected static Logger logger = LoggerFactory.getLogger(OrmLiteSqliteOpenHelper.class);
-	protected AndroidConnectionSource connectionSource = new AndroidConnectionSource(this);
+	protected AndroidConnectionSource connectionSource;
 
 	protected boolean cancelQueriesEnabled;
 	private volatile boolean isOpen = true;
+	protected String databaseName;
+	protected int databaseVersion;
 
 	/**
 	 * @param context
@@ -52,6 +54,8 @@ public abstract class OrmLiteSqliteOpenHelper extends SQLiteOpenHelper {
 	 */
 	public OrmLiteSqliteOpenHelper(Context context, String databaseName, CursorFactory factory, int databaseVersion) {
 		super(context, databaseName, factory, databaseVersion);
+		this.databaseName = databaseName;
+		this.databaseVersion = databaseVersion;
 		logger.trace("{}: constructed connectionSource {}", this, connectionSource);
 	}
 
@@ -115,6 +119,8 @@ public abstract class OrmLiteSqliteOpenHelper extends SQLiteOpenHelper {
 	public OrmLiteSqliteOpenHelper(Context context, String databaseName, CursorFactory factory, int databaseVersion,
 			InputStream stream) {
 		super(context, databaseName, factory, databaseVersion);
+		this.databaseName = databaseName;
+		this.databaseVersion = databaseVersion;
 		if (stream == null) {
 			return;
 		}
@@ -174,6 +180,9 @@ public abstract class OrmLiteSqliteOpenHelper extends SQLiteOpenHelper {
 	 * Get the connection source associated with the helper.
 	 */
 	public ConnectionSource getConnectionSource() {
+		if(connectionSource == null){
+			connectionSource = new AndroidConnectionSource(this, getPassword(databaseName, databaseVersion));
+		}
 		if (!isOpen) {
 			// we don't throw this exception, but log it for debugging purposes
 			logger.warn(new IllegalStateException(), "Getting connectionSource was called after closed");
@@ -193,16 +202,7 @@ public abstract class OrmLiteSqliteOpenHelper extends SQLiteOpenHelper {
 		 * AndroidConnectionSource, otherwise it will go recursive if the subclass calls getConnectionSource().
 		 */
 		DatabaseConnection conn = cs.getSpecialConnection(null);
-		boolean clearSpecial = false;
-		if (conn == null) {
-			conn = new AndroidDatabaseConnection(db, true, cancelQueriesEnabled);
-			try {
-				cs.saveSpecialConnection(conn);
-				clearSpecial = true;
-			} catch (SQLException e) {
-				throw new IllegalStateException("Could not save special connection", e);
-			}
-		}
+		boolean clearSpecial = this.saveConnection(cs, conn, db);
 		try {
 			onCreate(db, cs);
 		} finally {
@@ -224,16 +224,7 @@ public abstract class OrmLiteSqliteOpenHelper extends SQLiteOpenHelper {
 		 * AndroidConnectionSource, otherwise it will go recursive if the subclass calls getConnectionSource().
 		 */
 		DatabaseConnection conn = cs.getSpecialConnection(null);
-		boolean clearSpecial = false;
-		if (conn == null) {
-			conn = new AndroidDatabaseConnection(db, true, cancelQueriesEnabled);
-			try {
-				cs.saveSpecialConnection(conn);
-				clearSpecial = true;
-			} catch (SQLException e) {
-				throw new IllegalStateException("Could not save special connection", e);
-			}
-		}
+		boolean clearSpecial = saveConnection(cs, conn, db);
 		try {
 			onUpgrade(db, cs, oldVersion, newVersion);
 		} finally {
@@ -322,5 +313,28 @@ public abstract class OrmLiteSqliteOpenHelper extends SQLiteOpenHelper {
 		} catch (FileNotFoundException e) {
 			throw new IllegalArgumentException("Could not open config file " + configFile, e);
 		}
+	}
+
+	/**
+	 * Abstract method for getting the database password. It allows to distinguish between databases
+	 * and database versions. You can fill this method with any logic to protect the password.
+	 * @param databaseName the database to be opened
+	 * @param databaseVersion the database version
+	 * @return a String representing the password
+	 */
+	protected abstract String getPassword(String databaseName, int databaseVersion);
+
+	private boolean saveConnection(ConnectionSource cs, DatabaseConnection conn, SQLiteDatabase db){
+		boolean clearSpecial = false;
+		if (conn == null) {
+			conn = new AndroidDatabaseConnection(db, true, cancelQueriesEnabled);
+			try {
+				cs.saveSpecialConnection(conn);
+				clearSpecial = true;
+			} catch (SQLException e) {
+				throw new IllegalStateException("Could not save special connection", e);
+			}
+		}
+		return clearSpecial;
 	}
 }
