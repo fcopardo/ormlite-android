@@ -42,6 +42,8 @@ captures/
 .idea/dictionaries
 .idea/libraries
 .idea
+/target
+/gen-external-apklibs
 
 # Keystore files
 *.jks

@@ -5,8 +5,8 @@ import java.sql.SQLException;
 import java.sql.Savepoint;
 
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteStatement;
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteStatement;
 
 import com.j256.ormlite.dao.ObjectCache;
 import com.j256.ormlite.field.FieldType;
@@ -29,7 +29,7 @@ import com.j256.ormlite.support.GeneratedKeyHolder;
  */
 public class AndroidDatabaseConnection implements DatabaseConnection {
 
-	private static final String ANDROID_VERSION = "VERSION__5.0__";
+	private static final String ANDROID_VERSION = "VERSION__5.1-SNAPSHOT__";
 
 	private static Logger logger = LoggerFactory.getLogger(AndroidDatabaseConnection.class);
 	private static final String[] NO_STRING_ARGS = new String[0];
